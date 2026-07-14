@@ -47,14 +47,26 @@ TrustFlow applies this same model to capital allocation:
 |---|---|
 | `set_trust(caller, peers)` | Declare your quorum slice — the addresses you trust |
 | `get_trust(node)` | Read the quorum slice for any address |
+| `clear_trust(caller)` | Remove your quorum slice entirely |
 | `deposit(funder, token_id, amount)` | Deposit tokens into the contract for future distribution |
+| `withdraw(funder, token_id, amount)` | Withdraw undistributed deposited tokens back to the funder |
 | `distribute(funder, token_id, amount, max_hops)` | Distribute funds to all addresses reachable within `max_hops` hops |
-| `balance(funder)` | Check a funder's deposited balance |
+| `balance(funder, token_id)` | Check a funder's deposited balance for a given token |
 
 ### Storage
 
 - `TrustSlice(Address)` → `Vec<Address>` — persistent, mirrors an FBA quorum slice declaration
-- `Deposit(Address)` → `i128` — persistent, tracks deposited funds per funder
+- `Deposit(Address, Address)` → `i128` — persistent, tracks deposited funds per `(funder, token)` pair, so balances of different tokens never mix
+
+### Events
+
+| Topics | Data | Emitted by |
+|---|---|---|
+| `("trust", caller)` | peer count | `set_trust` |
+| `("untrust", caller)` | — | `clear_trust` |
+| `("deposit", funder, token_id)` | amount | `deposit` |
+| `("withdraw", funder, token_id)` | amount | `withdraw` |
+| `("distrib", funder, token_id)` | `(amount, recipient_count)` | `distribute` |
 
 ### Distribution Algorithm
 
@@ -77,8 +89,9 @@ stellar contract build
 
 ```bash
 cargo test
-# 6 tests: trust set/get, deposit, 1-hop distribute, 2-hop distribute,
-#          overdraw panic, no-peers panic
+# 13 tests: trust set/get/clear, deposit, per-token deposit isolation,
+#           withdraw + overdraw panic, 1-hop/2-hop/diamond distribute,
+#           overdraw panic, no-peers panic, max_hops bounds (0 and 6)
 ```
 
 ## Deploy & Invoke (Testnet)
@@ -105,7 +118,27 @@ stellar contract invoke --id trustflow --source alice --network testnet -- \
 # Distribute to all peers within 2 hops
 stellar contract invoke --id trustflow --source alice --network testnet -- \
   distribute --funder <ALICE_ADDRESS> --token_id <TOKEN_ADDRESS> --amount 1000 --max_hops 2
+
+# Check balance (per-token)
+stellar contract invoke --id trustflow --source alice --network testnet -- \
+  balance --funder <ALICE_ADDRESS> --token_id <TOKEN_ADDRESS>
 ```
+
+## Frontend
+
+A wallet-connected UI lives in `frontend/` — plain HTML/CSS/JS (no build step) using
+[Freighter](https://www.freighter.app/) for signing and `@stellar/stellar-sdk`'s dynamic
+contract `Client` (loaded from esm.sh) to call the contract by reading its on-chain spec.
+
+```bash
+cd frontend
+python3 -m http.server 8080
+# open http://localhost:8080, paste your deployed Contract ID into the Network panel
+```
+
+Features: connect wallet, set/get/clear trust, deposit/withdraw/check balance, distribute,
+and a canvas-based trust graph visualizer that BFS-crawls `get_trust` from an origin address.
+Network (Testnet/Futurenet) and Contract ID are stored in `localStorage`.
 
 ## Use Cases
 
@@ -118,6 +151,12 @@ stellar contract invoke --id trustflow --source alice --network testnet -- \
 | Property | Value |
 |---|---|
 | File | `target/wasm32v1-none/release/trustflow.wasm` |
-| Size | 6757 bytes |
-| Hash | `953f86c2fb99757c09d3c1be1fec968f8998d2fa0e21f7f574855733a6a5d889` |
 | SDK | soroban-sdk 22.0.0 |
+
+Size and hash change with the contract source — after `stellar contract build`, get the
+current values with:
+
+```bash
+ls -la target/wasm32v1-none/release/trustflow.wasm
+sha256sum target/wasm32v1-none/release/trustflow.wasm
+```

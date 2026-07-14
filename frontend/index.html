@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustFlow</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span>TrustFlow</span>
+    </div>
+    <div id="wallet-area" class="wallet-area">
+      <button id="connect-btn" class="btn primary">Connect Wallet</button>
+      <span id="wallet-address" class="address hidden"></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>Network</h2>
+      <label>Network
+        <select id="network-select">
+          <option value="TESTNET">Testnet</option>
+          <option value="FUTURENET">Futurenet</option>
+        </select>
+      </label>
+      <label>Contract ID
+        <input id="contract-id" type="text" placeholder="C..." />
+      </label>
+      <p class="hint">Deploy the contract (see README) and paste its ID here. Stored locally in your browser.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Trust Graph</h2>
+      <label>Peers to trust (comma-separated addresses)
+        <input id="trust-peers" type="text" placeholder="GABC..., GDEF..." />
+      </label>
+      <div class="row">
+        <button id="set-trust-btn" class="btn">Set Trust</button>
+        <button id="clear-trust-btn" class="btn subtle">Clear Trust</button>
+      </div>
+      <label>Look up trust for address
+        <input id="lookup-address" type="text" placeholder="G..." />
+      </label>
+      <button id="get-trust-btn" class="btn subtle">Get Trust</button>
+      <pre id="trust-result" class="result"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>Deposit / Withdraw</h2>
+      <label>Token ID
+        <input id="token-id" type="text" placeholder="C..." />
+      </label>
+      <label>Amount (integer, stroops/smallest unit)
+        <input id="amount" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="1000" />
+      </label>
+      <div class="row">
+        <button id="deposit-btn" class="btn">Deposit</button>
+        <button id="withdraw-btn" class="btn subtle">Withdraw</button>
+        <button id="balance-btn" class="btn subtle">Check Balance</button>
+      </div>
+      <pre id="funding-result" class="result"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>Distribute</h2>
+      <label>Max Hops (1-5)
+        <input id="max-hops" type="number" min="1" max="5" value="2" />
+      </label>
+      <button id="distribute-btn" class="btn primary">Distribute</button>
+      <p class="hint">Uses the Token ID and Amount from the Deposit / Withdraw panel.</p>
+      <pre id="distribute-result" class="result"></pre>
+    </section>
+
+    <section class="panel wide">
+      <h2>Trust Graph Visualizer</h2>
+      <div class="row">
+        <label class="grow">Origin address
+          <input id="graph-origin" type="text" placeholder="G..." />
+        </label>
+        <label>Hops
+          <input id="graph-hops" type="number" min="1" max="5" value="2" />
+        </label>
+        <button id="crawl-btn" class="btn">Crawl</button>
+      </div>
+      <canvas id="graph-canvas"></canvas>
+    </section>
+
+    <section class="panel wide">
+      <h2>Activity Log</h2>
+      <pre id="log" class="result log"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
